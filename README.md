@@ -1,4 +1,4 @@
-# RTL Toggle for Claude.ai
+# RTL Toggle for Claude.ai - Chrome Extension
 
 ![Demo](demo.gif)
 
