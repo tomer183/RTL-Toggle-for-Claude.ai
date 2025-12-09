@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "RTL Toggle for Claude.ai",
+  "version": "2.56",
+  "description": "Adds RTL/LTR direction toggle buttons to Claude.ai chat messages and code blocks. Perfect for Hebrew, Arabic, Persian, and other RTL languages. Bidirectional arrow buttons appear next to each message and code block for quick text direction switching.",
+  "permissions": [],
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
