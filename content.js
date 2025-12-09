@@ -60,8 +60,7 @@ function createRTLToggleButton(targetElement, isPreElement = false) {
   button.style.position = "absolute";
   button.style.top = "8px";
   button.style.zIndex = "1000";
-  button.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-  button.style.backdropFilter = "blur(4px)";
+  button.style.background = "linear-gradient(135deg, #00D68F 0%, #0095FF 100%)";
   button.style.transition = "all 0.3s ease";
   button.style.cursor = "pointer";
   button.style.border = "none";
@@ -69,33 +68,25 @@ function createRTLToggleButton(targetElement, isPreElement = false) {
   button.style.display = "inline-flex";
   button.style.alignItems = "center";
   button.style.justifyContent = "center";
-  button.style.width = "32px";
-  button.style.height = "32px";
+  button.style.width = "28px";
+  button.style.height = "28px";
+  button.style.padding = "5px";
 
-  // Create inner div structure
-  const innerDiv = document.createElement("div");
-  innerDiv.style.display = "flex";
-  innerDiv.style.alignItems = "center";
-  innerDiv.style.justifyContent = "center";
-  innerDiv.style.width = "20px";
-  innerDiv.style.height = "20px";
+  // Create SVG icon - RTL paragraph lines (right-aligned like MS Word)
+  // Will be mirrored when LTR
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "18");
+  svg.setAttribute("height", "18");
+  svg.setAttribute("viewBox", "0 0 128 128");
+  svg.setAttribute("aria-hidden", "true");
+  svg.innerHTML = `
+    <rect x="24" y="20" width="80" height="12" rx="3" fill="white"/>
+    <rect x="40" y="44" width="64" height="12" rx="3" fill="white"/>
+    <rect x="32" y="68" width="72" height="12" rx="3" fill="white"/>
+    <rect x="48" y="92" width="56" height="12" rx="3" fill="white"/>
+  `;
 
-  // Create SVG icon - RTL/LTR text representation
-  innerDiv.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="white">
-    <!-- LTR side (left-aligned lines) -->
-    <rect x="2" y="4" width="8" height="1.5" rx="0.5"/>
-    <rect x="2" y="8" width="6" height="1.5" rx="0.5"/>
-    <rect x="2" y="12" width="7" height="1.5" rx="0.5"/>
-    <!-- RTL side (right-aligned lines) -->
-    <rect x="14" y="4" width="8" height="1.5" rx="0.5"/>
-    <rect x="16" y="8" width="6" height="1.5" rx="0.5"/>
-    <rect x="15" y="12" width="7" height="1.5" rx="0.5"/>
-    <!-- Swap arrows in middle -->
-    <path d="M10 17L7 15V19L10 17Z"/>
-    <path d="M14 17L17 15V19L14 17Z"/>
-  </svg>`;
-
-  button.appendChild(innerDiv);
+  button.appendChild(svg);
 
   // Get current direction state
   let isRTL;
@@ -107,19 +98,21 @@ function createRTLToggleButton(targetElement, isPreElement = false) {
     isRTL = targetElement.dir === "rtl";
   }
 
-  // Function to update button position based on direction
-  const updateButtonPosition = (rtl) => {
+  // Function to update button position and icon based on direction
+  const updateButtonState = (rtl) => {
     if (rtl) {
       button.style.right = "-52px";
       button.style.left = "auto";
+      svg.style.transform = "scaleX(1)"; // RTL - lines aligned right
     } else {
       button.style.left = "-52px";
       button.style.right = "auto";
+      svg.style.transform = "scaleX(-1)"; // LTR - mirror to align lines left
     }
   };
 
-  // Set initial position
-  updateButtonPosition(isRTL);
+  // Set initial position and icon state
+  updateButtonState(isRTL);
 
   // Toggle direction on click
   button.addEventListener("click", (e) => {
@@ -147,8 +140,8 @@ function createRTLToggleButton(targetElement, isPreElement = false) {
       targetElement.dir = isRTL ? "rtl" : "ltr";
     }
 
-    // Update button position
-    updateButtonPosition(isRTL);
+    // Update button position and icon state
+    updateButtonState(isRTL);
 
     // Immediately ensure action bars within this element stay LTR
     keepActionBarsLTR();
