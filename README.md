@@ -1,6 +1,6 @@
 # RTL Toggle for Claude.ai - Chrome Extension
 
-![Demo](demo.gif?v=2)
+![Demo](screenshot.gif?v=2)
 
 <div dir="rtl">
 
