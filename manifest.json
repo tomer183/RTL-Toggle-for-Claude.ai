@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RTL Toggle for Claude.ai - Chrome Extension",
-  "version": "2.65",
+  "version": "2.67",
   "description": "Chrome extension that adds RTL/LTR direction toggle buttons to Claude.ai chat messages and code blocks. Perfect for Hebrew, Arabic, Persian, and other RTL languages.",
   "author": "Tomer Eshckoly",
   "icons": {

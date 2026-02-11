@@ -31,6 +31,73 @@ function keepActionBarsLTR() {
   });
 }
 
+// Directional symbol pairs to mirror when toggling RTL/LTR
+// Each pair: [ltrSymbol, rtlSymbol] — they swap with each other
+const DIRECTIONAL_SYMBOL_PAIRS = [
+  ["\u2192", "\u2190"],   // → ←
+  ["\u27F6", "\u27F5"],   // ⟶ ⟵
+  ["\u25B6", "\u25C0"],   // ▶ ◀
+  ["\u00BB", "\u00AB"],   // » «
+  ["\u21D2", "\u21D0"],   // ⇒ ⇐
+  ["\u25BA", "\u25C4"],   // ► ◄
+];
+
+// Mirror directional symbols in text nodes within an element
+function mirrorDirectionalSymbols(element) {
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: (node) => {
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        // Skip code, buttons, action bars, toggle buttons
+        if (
+          parent.closest("code") ||
+          parent.closest("button") ||
+          parent.closest('[data-keep-ltr]') ||
+          parent.closest('[data-rtl-toggle]')
+        ) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    }
+  );
+
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    textNodes.push(node);
+  }
+
+  textNodes.forEach((textNode) => {
+    let text = textNode.textContent;
+
+    // Quick check — skip if no directional symbols present
+    let hasMatch = false;
+    for (const [a, b] of DIRECTIONAL_SYMBOL_PAIRS) {
+      if (text.includes(a) || text.includes(b)) {
+        hasMatch = true;
+        break;
+      }
+    }
+    if (!hasMatch) return;
+
+    // Use placeholders to avoid double-swaps (→ becoming ← then back to →)
+    DIRECTIONAL_SYMBOL_PAIRS.forEach(([a, b], i) => {
+      text = text.replaceAll(a, `\uFFF0${i}A\uFFF0`);
+      text = text.replaceAll(b, `\uFFF0${i}B\uFFF0`);
+    });
+    DIRECTIONAL_SYMBOL_PAIRS.forEach(([a, b], i) => {
+      text = text.replaceAll(`\uFFF0${i}A\uFFF0`, b);
+      text = text.replaceAll(`\uFFF0${i}B\uFFF0`, a);
+    });
+
+    textNode.textContent = text;
+  });
+}
+
 // Inject styles for RTL toggle buttons
 function injectStyles() {
   if (document.getElementById("rtl-toggle-styles")) return;
@@ -147,6 +214,9 @@ function createRTLToggleButton(targetElement, isPreElement = false) {
       tableCells.forEach((td) => {
         td.style.textAlign = isRTL ? "right" : "left";
       });
+
+      // Mirror directional symbols (→ ← etc.)
+      mirrorDirectionalSymbols(targetElement);
     } else {
       // For other elements, use dir attribute
       targetElement.dir = isRTL ? "rtl" : "ltr";
@@ -162,6 +232,9 @@ function createRTLToggleButton(targetElement, isPreElement = false) {
           thead.classList.add("text-left");
         }
       });
+
+      // Mirror directional symbols (→ ← etc.)
+      mirrorDirectionalSymbols(targetElement);
     }
 
     // Update button position and icon state
@@ -247,11 +320,108 @@ function addRTLToggleToPreElements() {
   });
 }
 
+// Function to add RTL/LTR toggle button to the chat input
+function addRTLToggleToChatInput() {
+  const chatInput = document.querySelector('[data-testid="chat-input"]');
+  if (!chatInput) return;
+
+  // Use the parent as the button container (can't put button inside contenteditable)
+  const container = chatInput.parentElement;
+  if (!container) return;
+
+  // Check if button already exists
+  if (container.querySelector('[data-rtl-toggle-input="true"]')) return;
+
+  const button = document.createElement("button");
+  button.className = "rtl-toggle-btn";
+  button.type = "button";
+  button.title = "Toggle RTL/LTR";
+  button.setAttribute("data-rtl-toggle", "true");
+  button.setAttribute("data-rtl-toggle-input", "true");
+
+  button.style.position = "absolute";
+  button.style.top = "8px";
+  button.style.zIndex = "1000";
+  button.style.background = "linear-gradient(135deg, #00D68F 0%, #0095FF 100%)";
+  button.style.transition = "all 0.3s ease";
+  button.style.cursor = "pointer";
+  button.style.border = "none";
+  button.style.borderRadius = "6px";
+  button.style.display = "inline-flex";
+  button.style.alignItems = "center";
+  button.style.justifyContent = "center";
+  button.style.width = "28px";
+  button.style.height = "28px";
+  button.style.padding = "5px";
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "18");
+  svg.setAttribute("height", "18");
+  svg.setAttribute("viewBox", "0 0 128 128");
+  svg.setAttribute("aria-hidden", "true");
+
+  const rects = [
+    { x: 24, y: 20, width: 80 },
+    { x: 40, y: 44, width: 64 },
+    { x: 32, y: 68, width: 72 },
+    { x: 48, y: 92, width: 56 },
+  ];
+  rects.forEach(({ x, y, width }) => {
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", width);
+    rect.setAttribute("height", "12");
+    rect.setAttribute("rx", "3");
+    rect.setAttribute("fill", "white");
+    svg.appendChild(rect);
+  });
+
+  button.appendChild(svg);
+
+  let isRTL = chatInput.dir === "rtl";
+
+  const updateButtonState = (rtl) => {
+    if (rtl) {
+      button.style.right = "-40px";
+      button.style.left = "auto";
+      svg.style.transform = "scaleX(1)";
+    } else {
+      button.style.left = "-40px";
+      button.style.right = "auto";
+      svg.style.transform = "scaleX(-1)";
+    }
+  };
+
+  updateButtonState(isRTL);
+
+  button.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    isRTL = !isRTL;
+    chatInput.dir = isRTL ? "rtl" : "ltr";
+    updateButtonState(isRTL);
+    chatInput.focus();
+    console.log(`Chat input direction changed to: ${isRTL ? "RTL" : "LTR"}`);
+  });
+
+  // Ensure parent is positioned for absolute button
+  const computedStyle = window.getComputedStyle(container);
+  if (computedStyle.position === "static") {
+    container.style.position = "relative";
+  }
+  container.style.overflow = "visible";
+
+  container.appendChild(button);
+  console.log("RTL/LTR toggle button added to chat input");
+}
+
 // Run initially when page loads
 injectStyles();
 highlightRenderCountElements();
 addRTLToggleToElements();
 addRTLToggleToPreElements();
+addRTLToggleToChatInput();
 keepActionBarsLTR();
 
 // Watch for dynamically added elements
@@ -259,6 +429,7 @@ const observer = new MutationObserver(() => {
   highlightRenderCountElements();
   addRTLToggleToElements();
   addRTLToggleToPreElements();
+  addRTLToggleToChatInput();
   keepActionBarsLTR();
 });
 
@@ -275,5 +446,6 @@ setInterval(() => {
   highlightRenderCountElements();
   addRTLToggleToElements();
   addRTLToggleToPreElements();
+  addRTLToggleToChatInput();
   keepActionBarsLTR();
 }, 1000);
