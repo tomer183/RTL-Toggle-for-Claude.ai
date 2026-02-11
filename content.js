@@ -124,6 +124,18 @@ function createRTLToggleButton(targetElement, isPreElement = false) {
       targetElement.style.direction = isRTL ? "rtl" : "ltr";
       targetElement.style.textAlign = isRTL ? "right" : "left";
 
+      // Also update thead elements - swap text-left/text-right classes
+      const theadElements = targetElement.querySelectorAll("thead");
+      theadElements.forEach((thead) => {
+        if (isRTL) {
+          thead.classList.remove("text-left");
+          thead.classList.add("text-right");
+        } else {
+          thead.classList.remove("text-right");
+          thead.classList.add("text-left");
+        }
+      });
+
       // Also update any table headers (th) inside the pre element
       const tableHeaders = targetElement.querySelectorAll("th");
       tableHeaders.forEach((th) => {
@@ -138,6 +150,18 @@ function createRTLToggleButton(targetElement, isPreElement = false) {
     } else {
       // For other elements, use dir attribute
       targetElement.dir = isRTL ? "rtl" : "ltr";
+
+      // Also update thead elements - swap text-left/text-right classes
+      const theadElements = targetElement.querySelectorAll("thead");
+      theadElements.forEach((thead) => {
+        if (isRTL) {
+          thead.classList.remove("text-left");
+          thead.classList.add("text-right");
+        } else {
+          thead.classList.remove("text-right");
+          thead.classList.add("text-left");
+        }
+      });
     }
 
     // Update button position and icon state
